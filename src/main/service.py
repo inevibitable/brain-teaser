@@ -1,4 +1,6 @@
+from flask import Flask
 
+app = Flask(__name__)
 
 # input: list of dictionaries, list of key:value pair queries as dictionaries
 # output: the input list, filtered by the queries.
@@ -35,8 +37,10 @@ def filterResults(users, queries):
             
     return filtered_list
 
-
-users = [{"name": "root", "uid": 0 },{"name": "dwoodlins", "uid": 1001}, {"name": "dwoodlins", "uid": 1002}]
-queries = [{"name": "dwoodlins"}, {"uid": 1002}]
-print(filterResults(users,queries))
-# expect {"name": "dwoodlins", "uid": 1002}
+# temporary test for filterResults
+@app.route('/filterResultTest')
+def runFilterResultTest():
+    users = [{"name": "root", "uid": 0 },{"name": "dwoodlins", "uid": 1001}, {"name": "dwoodlins", "uid": 1002}]
+    queries = [{"name": "dwoodlins"}, {"uid": 1002}]
+    # expect {"name": "dwoodlins", "uid": 1002}
+    return str(filterResults(users,queries))
