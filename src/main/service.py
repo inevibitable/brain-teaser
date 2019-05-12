@@ -81,23 +81,6 @@ def getUsersDict():
         dict_users.append(dict(item))
 
     return dict_users
-    
-    # alternatively use string.split on each line of the passwd file. 
-    # with open(passwd_path, "r", newline ="\n") as f:
-    #     passwd_text = f.read().splitlines()
-
-    # output = []
-    # for line in passwd_text:
-    #     output.append(line.split(':'))
-
-    # output_dictlist = [{}]*len(output)
-
-    # for line in range(0,len(output)):
-    #     for item in range(0,len(passwd_fieldnames)):
-    #         # create a dictionary that maps the field names to their values, per line
-    #         output_dictlist[line][passwd_fieldnames[item]] = output[line][item]
-
-    # return output
 
 # GROUPFILE_PATH
 def getGroupsDict():
