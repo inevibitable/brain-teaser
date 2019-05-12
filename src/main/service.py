@@ -1,5 +1,6 @@
 from flask import Flask
 from flask import request
+from flask import abort
 import os
 import csv
 
@@ -13,6 +14,7 @@ app = Flask(__name__)
 #       queries: [{"name": "dwoodlins"}, {"uid": 1002}]
 #    output: 
 #       [{'name': 'dwoodlins', 'uid': 1002}]
+# returns empty list if no matches found.
 def filterResults(users, queries = []):
 
     # if no query parameters passed in, return the input users. 
@@ -122,12 +124,16 @@ def runPasswdParseTest():
 def getAllUsers(users):
     return filterResults(users)
 
+# /users
+# returns all users in the passwd file. 
 @app.route('/users')
 def getUsers():
     users = getUsersDict()
-    #return str([request.args.to_dict()])
     return str(getAllUsers(users))
 
+# /users/query
+# examines the URL parameters and returns users matching the query parameters. 
+# allowable URL params: [?name=<nq>][&uid=<uq>][&gid=<gq>][&comment=<cq>][&home=<hq>][&shell=<sq>]
 @app.route('/users/query')
 def getQueriedUsers():
     users = getUsersDict()
@@ -143,3 +149,21 @@ def getQueriedUsers():
             query.append({item: request.args.get(item)})
 
     return str(filterResults(users,query))
+
+# /users/<uid>
+# returns the user with the given <uid> or 404 if the <uid> was not found. 
+@app.route('/users/<uid>')
+def getUserById(uid):
+    users = getUsersDict()
+
+    # handle errors with getting users dict
+
+    # query for the user matching the uid passed in
+    query = [{'uid': uid}]
+    result = filterResults(users, query)
+
+    if result == []:
+        abort(404)
+        return
+
+    return str(result)
