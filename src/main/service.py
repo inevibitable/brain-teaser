@@ -44,23 +44,42 @@ def filterResults(users, queries = []):
 
 
 # parseFileToDict
-# input:  file path to a 
-# output: dictionary of key:value pairs corresponding to the lines in the files. 
-#def parseFileToDict(file_path, column_names):
-#    pass
+# input:  file path to a /etc/group or /etc/passwd file (or similar colon-separated file)
+# output: multi dictionary (list of dictionaries) of key:value pairs corresponding to the lines in the files. 
+#         also removes the "password" column, as it is not needed.
+def parseFileToDict(default_path, override_path, field_names):
+   
+    if override_path is not None:
+        # we can also check if this path exists, and fall back on the default. 
+        file_path = override_path
+    else:
+        file_path = default_path
 
+    # can perform additional checking of file here
+
+    # csv reader creates an ordered dict. we just want a regular dict.
+    entries_ordered_dict = []
+    with open(file_path, mode='r', newline='' ) as f:
+        reader = csv.DictReader(f, delimiter=':', quoting=csv.QUOTE_NONE, fieldnames = field_names)
+        entries_ordered_dict = list(reader)
+
+    # convert ordered dicts to regular dicts. 
+    entries_multidict = []
+    for entry in entries_ordered_dict:
+        del entry["password"]
+        entries_multidict.append(dict(entry))
+    
+    return entries_multidict
+
+
+# getUsersDict()
 # input: optional env variable PASSWDFILE_PATH, the path to the passwd file. if not present, defaults to /etc/passwd 
-# output: dictionary of key:value pairs, corresponding to the entries in the passwd file. 
+# output: returns a multidict (list of dictionaries) corresponding to the entries in the passwd file. 
+# Will read from a file. 
 def getUsersDict():
     default_passwd_path = "/etc/passwd"
     optional_configured_path = os.environ.get('PASSWDFILE_PATH')
-    passwd_path = ""
 
-    if optional_configured_path is not None:
-        # we can also check if this path exists, and fall back on the default. 
-        passwd_path = optional_configured_path
-    else:
-        passwd_path = default_passwd_path
     passwd_fieldnames = ["user",
                          "password",
                          "uid",
@@ -69,26 +88,39 @@ def getUsersDict():
                          "home",
                          "shell"]
 
-    # csv reader creates an ordered dict. we just want a regular dict.
-    ordered_dict_users = []
-    with open(passwd_path, mode='r', newline='' ) as f:
-        reader = csv.DictReader(f, delimiter=':', quoting=csv.QUOTE_NONE, fieldnames = passwd_fieldnames)
-        ordered_dict_users = list(reader)
+    users_multidict = parseFileToDict(default_passwd_path, optional_configured_path, passwd_fieldnames)
 
-    # convert ordered dicts to regular dicts. 
-    dict_users = []
-    for item in ordered_dict_users:
-        dict_users.append(dict(item))
 
-    return dict_users
 
+    return users_multidict 
+
+# getGroupsDict()
+# input: optional env variable GROUPFILE_PATH, the path to the group file. 
+#        defaults to /etc/group if not present. 
+# output: returns a multidict (list of dictionaries) corresponding to the entries in the group file. 
 # GROUPFILE_PATH
 def getGroupsDict():
+    default_group_path = "/etc/group"
+    optional_configured_path = os.environ.get('GROUPFILE_PATH')
 
-    # if entry["users"] is not None and "," in entry["users"]
-    #   entry["users"] = entry["users"].split()
-    pass
+    group_fieldnames = ["name",
+                        "password",
+                        "gid",
+                        "members"]
 
+    groups_multidict = parseFileToDict(default_group_path, optional_configured_path, group_fieldnames)
+
+    # parse the members string into a list, because the parsing doesn't handle these.
+    for entry in groups_multidict:
+        if "," in entry["members"]:
+            entry["members"] = entry["members"].split(",")
+        else:
+            if entry["members"]=="":
+                entry["members"] = []
+            else:
+                entry["members"] = [entry["members"]]
+
+    return groups_multidict
 
 
 # temporary test for filterResults
@@ -104,15 +136,20 @@ def runPasswdParseTest():
     return str(getUsersDict())
 
 
-def getAllUsers(users):
-    return filterResults(users)
+@app.route('/groupParseTest')
+def runGroupParseTest():
+    return str(getGroupsDict())
+
+
+#def getAllUsers(users):
+#    return filterResults(users)
 
 # /users
 # returns all users in the passwd file. 
 @app.route('/users')
 def getUsers():
     users = getUsersDict()
-    return str(getAllUsers(users))
+    return str(users)
 
 # /users/query
 # examines the URL parameters and returns users matching the query parameters. 
@@ -133,10 +170,9 @@ def getQueriedUsers():
 
     return str(filterResults(users,query))
 
-# /users/<uid>
-# returns the user with the given <uid> or 404 if the <uid> was not found. 
 @app.route('/users/<uid>')
 def getUserById(uid):
+    """ /users/<uid> returns the user with the given <uid> or 404 if the <uid> was not found. """
     users = getUsersDict()
 
     # handle errors with getting users dict
@@ -150,3 +186,9 @@ def getUserById(uid):
         return
 
     return str(result)
+
+@app.route('/groups')
+def getGroups():
+    """ /groups returns all groups in the group file """ 
+    groups = getGroupsDict()
+    return str(groups)
