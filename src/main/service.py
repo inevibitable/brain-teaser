@@ -10,29 +10,37 @@ app = Flask(__name__)
 # output: the input list, filtered by the queries.
 # example: 
 #    input:
-#       users: [{"name": "root", "uid": 0 },{"name": "dwoodlins", "uid": 1001}, {"name": "dwoodlins", "uid": 1002}]
+#       database: [{"name": "root", "uid": 0 },{"name": "dwoodlins", "uid": 1001}, {"name": "dwoodlins", "uid": 1002}]
 #       queries: [{"name": "dwoodlins"}, {"uid": 1002}]
 #    output: 
 #       [{'name': 'dwoodlins', 'uid': 1002}]
 # returns empty list if no matches found.
-def filterResults(users, queries = []):
+def filterResults(database, queries = []):
 
-    # if no query parameters passed in, return the input users. 
+    # if no query parameters passed in, return the input database. 
     if queries == []:
-        return users
+        return database
 
-    unfiltered_list = users
+    unfiltered_list = database
 
     for query in queries:
-        # successively filter the input dictionary by each query parameter,
+        # successively filter the input list by each query parameter,
         # until we have a list of items matching all the queries. 
         filtered_list = []
         query_key = list(query)[0]
         query_value = query[query_key]
 
-        for user in unfiltered_list:
-            if user[query_key] == query_value:
-                filtered_list.append(user)
+        for entry in unfiltered_list:
+            # the member query is a special case that gets handled here, since the query key
+            # doesn't map to a data key name.
+            if query_key == "member":
+                if query_value in entry["members"]:
+                    filtered_list.append(entry)
+            else:
+                # this takes advantage of the fact that the database and the queries
+                # use the same key names. 
+                if entry[query_key] == query_value:
+                    filtered_list.append(entry)
 
         unfiltered_list = filtered_list
         
@@ -131,19 +139,6 @@ def runFilterResultTest():
     # expect {"name": "dwoodlins", "uid": 1002}
     return str(filterResults(users,queries))
 
-@app.route('/passwdParseTest')
-def runPasswdParseTest():
-    return str(getUsersDict())
-
-
-@app.route('/groupParseTest')
-def runGroupParseTest():
-    return str(getGroupsDict())
-
-
-#def getAllUsers(users):
-#    return filterResults(users)
-
 # /users
 # returns all users in the passwd file. 
 @app.route('/users')
@@ -192,3 +187,25 @@ def getGroups():
     """ /groups returns all groups in the group file """ 
     groups = getGroupsDict()
     return str(groups)
+
+@app.route('/groups/query')
+def getQueriedGroups():
+    groups = getGroupsDict()
+
+    query = []
+
+    allowed_queries = set(["name",
+                        "gid",
+                        "member"])
+
+    for item in request.args:
+        # check the query parameters to make sure the requested fields exist
+        if item in allowed_queries:
+            if item == "member":
+                for member in request.args.getlist(item):
+                    query.append({item: member})
+            else:
+                query.append({item: request.args.get(item)})
+
+    return str(filterResults(groups,query))
+
