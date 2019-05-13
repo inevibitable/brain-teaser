@@ -6,16 +6,23 @@ import csv
 
 app = Flask(__name__)
 
-# input: list of dictionaries, list of key:value pair queries as dictionaries
-# output: the input list, filtered by the queries.
-# example: 
-#    input:
-#       database: [{"name": "root", "uid": 0 },{"name": "dwoodlins", "uid": 1001}, {"name": "dwoodlins", "uid": 1002}]
-#       queries: [{"name": "dwoodlins"}, {"uid": 1002}]
-#    output: 
-#       [{'name': 'dwoodlins', 'uid': 1002}]
-# returns empty list if no matches found.
+
 def filterResults(database, queries = []):
+    """ filters a list of dictionaries (database) based on a list of input queries
+
+        input: list of dictionaries, list of key:value pair queries as dictionaries
+        output: the input list, filtered by the queries.
+        example: 
+            input:
+                database: [{"name": "root", "uid": 0 },
+                            {"name": "dwoodlins", "uid": 1001}, 
+                            {"name": "dwoodlins", "uid": 1002}]
+                queries: [{"name": "dwoodlins"}, {"uid": 1002}]
+            output: 
+                [{'name': 'dwoodlins', 'uid': 1002}]
+        returns empty list if no matches found.
+        returns entire list if query is [].
+    """
 
     # if no query parameters passed in, return the input database. 
     if queries == []:
@@ -50,13 +57,13 @@ def filterResults(database, queries = []):
             
     return filtered_list
 
-
-# parseFileToDict
-# input:  file path to a /etc/group or /etc/passwd file (or similar colon-separated file)
-# output: multi dictionary (list of dictionaries) of key:value pairs corresponding to the lines in the files. 
-#         also removes the "password" column, as it is not needed.
 def parseFileToDict(default_path, override_path, field_names):
-   
+    """parses colon-separated files into a list of dictionaries.
+    
+    input:  file path to a /etc/group or /etc/passwd file (or similar colon-separated file)
+    output: multi dictionary (list of dictionaries) of key:value pairs corresponding to the lines in the files. 
+            also removes the "password" column, as it is not needed.
+    """
     if override_path is not None:
         # we can also check if this path exists, and fall back on the default. 
         file_path = override_path
@@ -79,13 +86,11 @@ def parseFileToDict(default_path, override_path, field_names):
     
     return entries_multidict
 
-
-# getUsersDict()
-
 def getUsersDict():
     """Reads the passwd file and returns a list of dictionaries containing the information from the file.
 
-    input: optional env variable PASSWDFILE_PATH, the path to the passwd file. if not present, defaults to /etc/passwd 
+    input: optional env variable PASSWDFILE_PATH, the path to the passwd file. 
+            if not present, defaults to /etc/passwd 
     output: returns a multidict (list of dictionaries) corresponding to the entries in the passwd file. 
     """
 
@@ -106,17 +111,14 @@ def getUsersDict():
 
     return users_multidict 
 
-# getGroupsDict()
-
 def getGroupsDict():
     """Reads the passwd file and returns a list of dictionaries containing the information from the file.
 
     input: optional env variable GROUPFILE_PATH, the path to the group file. 
-        defaults to /etc/group if not present. 
+           defaults to /etc/group if not present. 
     output: returns a multidict (list of dictionaries) corresponding to the entries in the group file. 
-    GROUPFILE_PATH
     """
-    
+
     default_group_path = "/etc/group"
     optional_configured_path = os.environ.get('GROUPFILE_PATH')
 
@@ -166,18 +168,20 @@ def runFilterResultTest():
 
 # users API endpoints
 
-# /users
-# returns all users in the passwd file. 
 @app.route('/users')
 def getUsers():
+    """/users returns all users in the passwd file"""
+
     users = getUsersDict()
     return str(users)
 
-# /users/query
-# examines the URL parameters and returns users matching the query parameters. 
-# allowable URL params: [?name=<nq>][&uid=<uq>][&gid=<gq>][&comment=<cq>][&home=<hq>][&shell=<sq>]
 @app.route('/users/query')
 def getQueriedUsers():
+    """/users/query returns users in the passwd file matching the query parameters. 
+
+    allowable URL params: [?name=<nq>][&uid=<uq>][&gid=<gq>][&comment=<cq>][&home=<hq>][&shell=<sq>]
+    """
+
     users = getUsersDict()
 
     if users is None:
@@ -194,7 +198,7 @@ def getQueriedUsers():
 
 @app.route('/users/<uid>')
 def getUserById(uid):
-    """ /users/<uid> returns the user with the given <uid> or 404 if the <uid> was not found. """
+    """/users/<uid> returns the user with the given <uid> or 404 if the <uid> was not found in the passwd file"""
 
     result = getUserByIdHelper(uid)
 
@@ -206,7 +210,7 @@ def getUserById(uid):
 
 @app.route('/users/<uid>/groups')
 def getGroupsContainingUser(uid):
-    """ /users/<uid>/groups returns all groups that contain the user <uid> as a member """ 
+    """/users/<uid>/groups returns all groups that contain the user <uid> as a member""" 
 
     user = getUserByIdHelper(uid) # no error checking if user not found
     groups = getGroupsDict() 
@@ -214,7 +218,6 @@ def getGroupsContainingUser(uid):
     query = [{'member': user[0]['user']}]
 
     return str(filterResults(groups, query))
-
 
 
 
