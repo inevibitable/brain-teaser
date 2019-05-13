@@ -139,6 +139,9 @@ def runFilterResultTest():
     # expect {"name": "dwoodlins", "uid": 1002}
     return str(filterResults(users,queries))
 
+
+# users API endpoints
+
 # /users
 # returns all users in the passwd file. 
 @app.route('/users')
@@ -182,6 +185,10 @@ def getUserById(uid):
 
     return str(result)
 
+
+
+# groups API endpoints
+
 @app.route('/groups')
 def getGroups():
     """ /groups returns all groups in the group file """ 
@@ -190,6 +197,7 @@ def getGroups():
 
 @app.route('/groups/query')
 def getQueriedGroups():
+    """ /groups/query returns all groups matching the specified URL query parameters """
     groups = getGroupsDict()
 
     query = []
@@ -209,3 +217,19 @@ def getQueriedGroups():
 
     return str(filterResults(groups,query))
 
+@app.route('/groups/<gid>')
+def getGroupById(gid):
+    """ /groups/<gid> returns the group with the given <gid> or 404 if the <gid> was not found. """
+    users = getGroupsDict()
+
+    # handle errors with getting groups dict
+
+    # query for the group matching the gid passed in
+    query = [{'gid': gid}]
+    result = filterResults(users, query)
+
+    if result == []:
+        abort(404)
+        return
+
+    return str(result)
