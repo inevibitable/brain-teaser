@@ -81,10 +81,14 @@ def parseFileToDict(default_path, override_path, field_names):
 
 
 # getUsersDict()
-# input: optional env variable PASSWDFILE_PATH, the path to the passwd file. if not present, defaults to /etc/passwd 
-# output: returns a multidict (list of dictionaries) corresponding to the entries in the passwd file. 
-# Will read from a file. 
+
 def getUsersDict():
+    """Reads the passwd file and returns a list of dictionaries containing the information from the file.
+
+    input: optional env variable PASSWDFILE_PATH, the path to the passwd file. if not present, defaults to /etc/passwd 
+    output: returns a multidict (list of dictionaries) corresponding to the entries in the passwd file. 
+    """
+
     default_passwd_path = "/etc/passwd"
     optional_configured_path = os.environ.get('PASSWDFILE_PATH')
 
@@ -103,11 +107,16 @@ def getUsersDict():
     return users_multidict 
 
 # getGroupsDict()
-# input: optional env variable GROUPFILE_PATH, the path to the group file. 
-#        defaults to /etc/group if not present. 
-# output: returns a multidict (list of dictionaries) corresponding to the entries in the group file. 
-# GROUPFILE_PATH
+
 def getGroupsDict():
+    """Reads the passwd file and returns a list of dictionaries containing the information from the file.
+
+    input: optional env variable GROUPFILE_PATH, the path to the group file. 
+        defaults to /etc/group if not present. 
+    output: returns a multidict (list of dictionaries) corresponding to the entries in the group file. 
+    GROUPFILE_PATH
+    """
+    
     default_group_path = "/etc/group"
     optional_configured_path = os.environ.get('GROUPFILE_PATH')
 
@@ -129,6 +138,21 @@ def getGroupsDict():
                 entry["members"] = [entry["members"]]
 
     return groups_multidict
+
+def getUserByIdHelper(uid):
+    """ getUserByIdHelper returns the user with the given <uid> or None if not found, as a python object. """
+    users = getUsersDict()
+
+    # handle errors with getting users dict
+
+    # query for the user matching the uid passed in
+    query = [{'uid': uid}]
+    result = filterResults(users, query)
+
+    if result == []:
+        return None
+
+    return result
 
 
 # temporary test for filterResults
@@ -171,19 +195,26 @@ def getQueriedUsers():
 @app.route('/users/<uid>')
 def getUserById(uid):
     """ /users/<uid> returns the user with the given <uid> or 404 if the <uid> was not found. """
-    users = getUsersDict()
 
-    # handle errors with getting users dict
+    result = getUserByIdHelper(uid)
 
-    # query for the user matching the uid passed in
-    query = [{'uid': uid}]
-    result = filterResults(users, query)
-
-    if result == []:
+    if result == None:
         abort(404)
         return
 
     return str(result)
+
+@app.route('/users/<uid>/groups')
+def getGroupsContainingUser(uid):
+    """ /users/<uid>/groups returns all groups that contain the user <uid> as a member """ 
+
+    user = getUserByIdHelper(uid) # no error checking if user not found
+    groups = getGroupsDict() 
+
+    query = [{'member': user[0]['user']}]
+
+    return str(filterResults(groups, query))
+
 
 
 
