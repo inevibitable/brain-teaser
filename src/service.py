@@ -76,9 +76,9 @@ def parseFileToDict(default_path, override_path, field_names):
 
     # csv reader creates an ordered dict. we just want a regular dict.
     entries_ordered_dict = []
-    with open(file_path, mode='r', newline='') as f:
+    with open(file_path, mode="r", newline="") as f:
         reader = csv.DictReader(f,
-                                delimiter=':',
+                                delimiter=":",
                                 quoting=csv.QUOTE_NONE,
                                 fieldnames=field_names)
         entries_ordered_dict = list(reader)
@@ -101,7 +101,7 @@ def getUsersDict():
     """
 
     default_passwd_path = "/etc/passwd"
-    optional_configured_path = os.environ.get('PASSWDFILE_PATH')
+    optional_configured_path = os.environ.get("PASSWDFILE_PATH")
 
     passwd_fieldnames = [
         "user", "password", "uid", "gid", "comment", "home", "shell"
@@ -123,7 +123,7 @@ def getGroupsDict():
     """
 
     default_group_path = "/etc/group"
-    optional_configured_path = os.environ.get('GROUPFILE_PATH')
+    optional_configured_path = os.environ.get("GROUPFILE_PATH")
 
     group_fieldnames = ["name", "password", "gid", "members"]
 
@@ -151,7 +151,7 @@ def getUserByIdHelper(uid):
     # handle errors with getting users dict
 
     # query for the user matching the uid passed in
-    query = [{'uid': uid}]
+    query = [{"uid": uid}]
     result = filterResults(users, query)
 
     if result == []:
@@ -161,7 +161,7 @@ def getUserByIdHelper(uid):
 
 
 # temporary test for filterResults
-@app.route('/filterResultTest')
+@app.route("/filterResultTest")
 def runFilterResultTest():
     users = [{
         "name": "root",
@@ -181,7 +181,7 @@ def runFilterResultTest():
 # users API endpoints
 
 
-@app.route('/users')
+@app.route("/users")
 def getUsers():
     """/users returns all users in the passwd file"""
 
@@ -189,7 +189,7 @@ def getUsers():
     return str(users)
 
 
-@app.route('/users/query')
+@app.route("/users/query")
 def getQueriedUsers():
     """/users/query returns users in the passwd file matching the query parameters. 
 
@@ -211,7 +211,7 @@ def getQueriedUsers():
     return str(filterResults(users, query))
 
 
-@app.route('/users/<uid>')
+@app.route("/users/<uid>")
 def getUserById(uid):
     """/users/<uid> returns the user with the given <uid> or 404 if the <uid> was not found in the passwd file"""
 
@@ -224,14 +224,14 @@ def getUserById(uid):
     return str(result)
 
 
-@app.route('/users/<uid>/groups')
+@app.route("/users/<uid>/groups")
 def getGroupsContainingUser(uid):
     """/users/<uid>/groups returns all groups that contain the user <uid> as a member"""
 
     user = getUserByIdHelper(uid)  # no error checking if user not found
     groups = getGroupsDict()
 
-    query = [{'member': user[0]['user']}]
+    query = [{"member": user[0]["user"]}]
 
     return str(filterResults(groups, query))
 
@@ -239,14 +239,14 @@ def getGroupsContainingUser(uid):
 # groups API endpoints
 
 
-@app.route('/groups')
+@app.route("/groups")
 def getGroups():
     """ /groups returns all groups in the group file """
     groups = getGroupsDict()
     return str(groups)
 
 
-@app.route('/groups/query')
+@app.route("/groups/query")
 def getQueriedGroups():
     """ /groups/query returns all groups matching the specified URL query parameters """
     groups = getGroupsDict()
@@ -267,7 +267,7 @@ def getQueriedGroups():
     return str(filterResults(groups, query))
 
 
-@app.route('/groups/<gid>')
+@app.route("/groups/<gid>")
 def getGroupById(gid):
     """ /groups/<gid> returns the group with the given <gid> or 404 if the <gid> was not found. """
     users = getGroupsDict()
@@ -275,7 +275,7 @@ def getGroupById(gid):
     # handle errors with getting groups dict
 
     # query for the group matching the gid passed in
-    query = [{'gid': gid}]
+    query = [{"gid": gid}]
     result = filterResults(users, query)
 
     if result == []:
