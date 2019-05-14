@@ -13,13 +13,13 @@ def filterResults(database, queries=[]):
 
         input: list of dictionaries, list of key:value pair queries as dictionaries
         output: the input list, filtered by the queries.
-        example: 
+        example:
             input:
                 database: [{"name": "root", "uid": 0 },
-                            {"name": "dwoodlins", "uid": 1001}, 
+                            {"name": "dwoodlins", "uid": 1001},
                             {"name": "dwoodlins", "uid": 1002}]
                 queries: [{"name": "dwoodlins"}, {"uid": 1002}]
-            output: 
+            output:
                 [{'name': 'dwoodlins', 'uid': 1002}]
         returns empty list if no matches found.
         returns entire list if query is [].
@@ -217,7 +217,7 @@ def getUserById(uid):
 
     result = getUserByIdHelper(uid)
 
-    if result == None:
+    if result is None:
         abort(404)
         return
 
