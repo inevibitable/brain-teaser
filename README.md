@@ -5,7 +5,7 @@ It is not intended for any real use case. Feel free to look at the code and use 
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project in production
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
@@ -24,17 +24,12 @@ python -m pip -U install pytest
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
-
-Step 1
-
-cd into the /src/ folder and build the docker container with:
+Installing is simple. Simply cd into the /src/ folder and build the docker container with:
 
 ```bash
 > docker build -t brain-teaser .
 ```
-
-then, if nothing went wrong, run the container with 
+Then, if nothing went wrong, run the container with 
 
 ```bash
 > docker run -p localhost:{your-favorite-unused-port}:5000/tcp brain-teaser
@@ -64,6 +59,12 @@ Stop the service by running
 ```bash
 > docker stop optimistic_mestorf
 ```
+
+Keep in mind the docker container is not meant for production use. Internally it uses the flask development server, which is not designed to handle production loads. It was chosen for ease of development and testing.
+
+## Deploying in Production
+
+This app still needs a bit more work before it can be deployed as a WSGI app in production, but all the hard parts have been done. 
 
 ## Running the tests
 
