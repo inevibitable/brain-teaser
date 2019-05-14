@@ -1,35 +1,10 @@
 import service
 import pytest 
 
-users = [{
-    'user': 'root',
-    'uid': '0',
-    'gid': '0',
-    'comment': 'root',
-    'home': '/root',
-    'shell': '/bin/ash'
-}, {
-    'user': 'bin',
-    'uid': '1',
-    'gid': '1',
-    'comment': 'bin',
-    'home': '/bin',
-    'shell': '/sbin/nologin'
-}, {
-    'user': 'daemon',
-    'uid': '2',
-    'gid': '2',
-    'comment': 'daemon',
-    'home': '/sbin',
-    'shell': '/sbin/nologin'
-}, {
-    'user': 'adm',
-    'uid': '3',
-    'gid': '4',
-    'comment': 'adm',
-    'home': '/var/adm',
-    'shell': '/sbin/nologin'
-}]
+users = [{'user': 'root','uid': '0','gid': '0','comment': 'root','home': '/root','shell': '/bin/ash'},
+        {'user': 'bin','uid': '1','gid': '1','comment': 'bin','home': '/bin','shell': '/sbin/nologin'},
+        {'user': 'daemon','uid': '2','gid': '2','comment': 'daemon','home': '/sbin','shell': '/sbin/nologin'},
+        {'user': 'adm','uid': '3','gid': '4','comment': 'adm','home': '/var/adm','shell': '/sbin/nologin'}]
 
 groups = [{'name': 'root', 'gid': '0', 'members': ['root']}, 
         {'name': 'bin', 'gid': '1', 'members': ['root', 'bin', 'daemon']}, 
@@ -54,14 +29,7 @@ def test_filterResults_noQuery():
 def test_filterResults_singleQuery():
     #checks that a filterResults request with a single query returns the expected value.
     query = [{'user': 'daemon'}]
-    queried_user = [{
-        'user': 'daemon',
-        'uid': '2',
-        'gid': '2',
-        'comment': 'daemon',
-        'home': '/sbin',
-        'shell': '/sbin/nologin'
-    }]
+    queried_user = [{'user': 'daemon','uid': '2','gid': '2','comment': 'daemon','home': '/sbin','shell': '/sbin/nologin'}]
 
     assert service.filterResults(users, query) == queried_user
 
@@ -91,13 +59,7 @@ def test_filterResults_multiMemberQuery():
 def test_filterResults_multiQuery():
     # test to make sure successive filter works
     query = [{'shell': '/sbin/nologin'}, {'user': 'daemon'}]
-    queried_user =  [{
-        'user': 'daemon',
-        'uid': '2',
-        'gid': '2',
-        'comment': 'daemon',
-        'home': '/sbin',
-        'shell': '/sbin/nologin'}]
+    queried_user =  [{'user': 'daemon','uid': '2','gid': '2','comment': 'daemon','home': '/sbin','shell': '/sbin/nologin'}]
 
     assert service.filterResults(users, query) == queried_user
 
@@ -122,4 +84,3 @@ def test_filterResults_nonsenseQuery():
     query = [{'foobar': 'foobar'}]
     
     with pytest.raises(KeyError): service.filterResults(groups,query)
-
