@@ -1,7 +1,5 @@
 FROM alpine
 
-# ENV PASSWDFILE_PATH
-# ENV GROUPFILE_PATH
 ENV FLASK_APP=service.py
 
 RUN mkdir /usr/local/service; 
