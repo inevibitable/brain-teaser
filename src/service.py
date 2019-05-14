@@ -4,6 +4,7 @@ import csv
 from flask import Flask
 from flask import request
 from flask import abort
+from flask import make_response
 
 app = Flask(__name__)
 
@@ -59,6 +60,7 @@ def filterResults(database, queries=[]):
     return filtered_list
 
 
+# TODO: factor out the file opening and just pass in the file text.
 def parseFileToDict(default_path, override_path, field_names):
     """parses colon-separated files into a list of dictionaries.
 
@@ -66,13 +68,14 @@ def parseFileToDict(default_path, override_path, field_names):
     output: multi dictionary (list of dictionaries) of key:value pairs corresponding to the lines in the files. 
             also removes the "password" column, as it is not needed.
     """
+
     if override_path is not None:
         # we can also check if this path exists, and fall back on the default.
         file_path = override_path
     else:
         file_path = default_path
 
-    # can perform additional checking of file here
+    # TODO: can perform additional checking of file here, in case the override path is bad.
 
     # csv reader creates an ordered dict. we just want a regular dict.
     entries_ordered_dict = []
@@ -106,10 +109,15 @@ def getUsersDict():
     passwd_fieldnames = [
         "user", "password", "uid", "gid", "comment", "home", "shell"
     ]
+    users_multidict = []
 
-    users_multidict = parseFileToDict(default_passwd_path,
-                                      optional_configured_path,
-                                      passwd_fieldnames)
+    try:
+        users_multidict = parseFileToDict(default_passwd_path,
+                                          optional_configured_path,
+                                          passwd_fieldnames)
+    except:
+        print("Error parsing user file")
+        return None
 
     return users_multidict
 
@@ -127,9 +135,14 @@ def getGroupsDict():
 
     group_fieldnames = ["name", "password", "gid", "members"]
 
-    groups_multidict = parseFileToDict(default_group_path,
-                                       optional_configured_path,
-                                       group_fieldnames)
+    groups_multidict = []
+    try:
+        groups_multidict = parseFileToDict(default_group_path,
+                                           optional_configured_path,
+                                           group_fieldnames)
+    except:
+        print("Error parsing group file.")
+        return None
 
     # parse the members string into a list, because the parsing doesn't handle these.
     for entry in groups_multidict:
@@ -148,7 +161,8 @@ def getUserByIdHelper(uid):
     """ getUserByIdHelper returns the user with the given <uid> or None if not found, as a python object. """
     users = getUsersDict()
 
-    # handle errors with getting users dict
+    if users is None:
+        return None
 
     # query for the user matching the uid passed in
     query = [{"uid": uid}]
@@ -160,24 +174,6 @@ def getUserByIdHelper(uid):
     return result
 
 
-# temporary test for filterResults
-@app.route("/filterResultTest")
-def runFilterResultTest():
-    users = [{
-        "name": "root",
-        "uid": 0
-    }, {
-        "name": "dwoodlins",
-        "uid": 1001
-    }, {
-        "name": "dwoodlins",
-        "uid": 1002
-    }]
-    queries = [{"name": "dwoodlins"}, {"uid": 1002}]
-    # expect {"name": "dwoodlins", "uid": 1002}
-    return str(filterResults(users, queries))
-
-
 # users API endpoints
 
 
@@ -186,6 +182,10 @@ def getUsers():
     """/users returns all users in the passwd file"""
 
     users = getUsersDict()
+
+    if users is None:
+        return make_response("Internal server error", 500)
+
     return str(users)
 
 
@@ -199,8 +199,7 @@ def getQueriedUsers():
     users = getUsersDict()
 
     if users is None:
-        # 404 or other error: could not find passwd file or passwd file blank.
-        pass
+        return make_response("Internal server error", 500)
 
     query = []
     for item in request.args:
@@ -218,8 +217,7 @@ def getUserById(uid):
     result = getUserByIdHelper(uid)
 
     if result is None:
-        abort(404)
-        return
+        return make_response("User with id " + uid + " not found.", 404)
 
     return str(result)
 
@@ -228,8 +226,12 @@ def getUserById(uid):
 def getGroupsContainingUser(uid):
     """/users/<uid>/groups returns all groups that contain the user <uid> as a member"""
 
-    user = getUserByIdHelper(uid)  # no error checking if user not found
+    user = getUserByIdHelper(uid)
     groups = getGroupsDict()
+
+    if user is None or groups is None:
+        response = make_response("Internal server error", 500)
+        return response
 
     query = [{"member": user[0]["user"]}]
 
@@ -243,6 +245,11 @@ def getGroupsContainingUser(uid):
 def getGroups():
     """ /groups returns all groups in the group file """
     groups = getGroupsDict()
+
+    if groups is None:
+        response = make_response("Internal server error", 500)
+        return response
+
     return str(groups)
 
 
@@ -250,6 +257,10 @@ def getGroups():
 def getQueriedGroups():
     """ /groups/query returns all groups matching the specified URL query parameters """
     groups = getGroupsDict()
+
+    if groups is None:
+        response = make_response("Internal server error", 500)
+        return response
 
     query = []
 
@@ -270,16 +281,17 @@ def getQueriedGroups():
 @app.route("/groups/<gid>")
 def getGroupById(gid):
     """ /groups/<gid> returns the group with the given <gid> or 404 if the <gid> was not found. """
-    users = getGroupsDict()
+    groups = getGroupsDict()
 
-    # handle errors with getting groups dict
+    if groups is None:
+        response = make_response("Internal server error", 500)
+        return response
 
     # query for the group matching the gid passed in
     query = [{"gid": gid}]
-    result = filterResults(users, query)
+    result = filterResults(groups, query)
 
     if result == []:
-        abort(404)
-        return
+        return make_response("Group with id " + gid + " not found.", 404)
 
     return str(result)
